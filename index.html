@@ -1,0 +1,503 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests de prérequis - Mécanique rationnelle</title>
+
+<style>
+:root {
+  --bleu: #123b5d;
+  --bleu-clair: #eaf3fa;
+  --accent: #1976b9;
+  --fond: #f4f7fb;
+  --vert: #188653;
+  --rouge: #c0392b;
+}
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--fond);
+  color: #243447;
+  line-height: 1.6;
+}
+
+header {
+  background: var(--bleu);
+  color: white;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+header h1 { margin: 8px 0; }
+header p { margin: 5px; }
+
+main {
+  max-width: 1050px;
+  margin: 25px auto;
+  padding: 0 16px 40px;
+}
+
+.panel, .chapter, .question, .result {
+  background: white;
+  border: 1px solid #dce5ee;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.chapter h3 { color: var(--bleu); margin-top: 0; }
+
+button {
+  border: 0;
+  border-radius: 7px;
+  padding: 11px 16px;
+  background: var(--accent);
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  margin: 4px 3px 4px 0;
+}
+
+button:hover { filter: brightness(.92); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+.secondary { background: #e4edf5; color: var(--bleu); }
+.hidden { display: none !important; }
+
+.info {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 15px 0;
+  font-weight: bold;
+}
+
+.progress-bg {
+  background: #e0e8ef;
+  height: 9px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#progress {
+  height: 100%;
+  width: 0;
+  background: var(--vert);
+  transition: width .2s;
+}
+
+.option {
+  display: block;
+  padding: 11px;
+  border: 1px solid #dce5ee;
+  border-radius: 8px;
+  margin: 9px 0;
+  cursor: pointer;
+}
+
+.option:hover { background: var(--bleu-clair); }
+.option input { margin-right: 10px; }
+
+.correct {
+  color: var(--vert);
+  font-weight: bold;
+}
+
+.incorrect {
+  color: var(--rouge);
+  font-weight: bold;
+}
+
+#timer { color: #a34d00; }
+
+footer {
+  text-align: center;
+  color: #65758b;
+  font-size: 13px;
+  padding: 20px;
+}
+
+@media(max-width:650px) {
+  .grid { grid-template-columns: 1fr; }
+  .panel, .chapter, .question, .result { padding: 15px; }
+}
+
+@media print {
+  header, #home, .no-print, footer { display: none !important; }
+  body { background: white; }
+  main { margin: 0; max-width: none; }
+  .panel, .result, .question { border: none; box-shadow: none; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <p>École Nationale Supérieure des Travaux Publics</p>
+  <h1>Test de prérequis</h1>
+  <h2>Mécanique rationnelle</h2>
+  <p>Évaluation des connaissances de base</p>
+</header>
+
+<main>
+  <section id="home" class="panel">
+    <h2>Présentation du test</h2>
+    <p><strong>Objectif :</strong> vérifier les connaissances de base nécessaires pour suivre le module de Mécanique rationnelle.</p>
+    <p><strong>Durée :</strong> 20 minutes par chapitre.</p>
+    <p><strong>Nombre de questions :</strong> 20 par chapitre.</p>
+    <p><strong>Type :</strong> QCM, une seule bonne réponse.</p>
+    <p><strong>Barème :</strong> 1 point par bonne réponse, note sur 20.</p>
+
+    <h2>Choisissez un chapitre</h2>
+    <div class="grid" id="chapters"></div>
+  </section>
+
+  <section id="test" class="panel hidden">
+    <div class="no-print">
+      <button class="secondary" onclick="goHome()">← Retour aux chapitres</button>
+    </div>
+
+    <h2 id="testTitle"></h2>
+    <div class="info">
+      <span id="questionNumber"></span>
+      <span>Temps restant : <span id="timer">20:00</span></span>
+      <span id="answered"></span>
+    </div>
+
+    <div class="progress-bg">
+      <div id="progress"></div>
+    </div>
+
+    <div id="questionArea" class="question"></div>
+
+    <div class="no-print">
+      <button id="previous" class="secondary" onclick="move(-1)">Précédente</button>
+      <button id="next" onclick="move(1)">Suivante</button>
+      <button onclick="finish(false)">Terminer et corriger</button>
+    </div>
+  </section>
+
+  <section id="results" class="result hidden">
+    <h2>Résultat du test</h2>
+    <h3 id="score"></h3>
+    <p id="comment"></p>
+
+    <div class="no-print">
+      <button onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+      <button class="secondary" onclick="retry()">Refaire le test</button>
+      <button class="secondary" onclick="goHome()">Retour aux chapitres</button>
+    </div>
+
+    <h3>Correction détaillée</h3>
+    <div id="correction"></div>
+  </section>
+</main>
+
+<footer>
+  Plateforme pédagogique — Module Mécanique rationnelle
+</footer>
+
+<script>
+// Chaque question contient : énoncé, choix, index de la bonne réponse, explication.
+const data = [
+{
+ title: "Chapitre 01 — Les outils mathématiques",
+ questions: [
+  ["La norme d'un vecteur (3,4) vaut :",["4","5","7","12"],1,"√(3²+4²)=5."],
+  ["Si u=(2,3) et v=(1,4), u+v vaut :",["(1,1)","(3,7)","(2,12)","(3,12)"],1,"On additionne les composantes."],
+  ["Le produit scalaire de (1,2) et (3,4) vaut :",["7","10","11","14"],2,"1×3+2×4=11."],
+  ["Deux vecteurs non nuls perpendiculaires ont un produit scalaire :",["Égal à 1","Nul","Négatif toujours","Infini"],1,"Le cosinus de 90° vaut zéro."],
+  ["Le produit vectoriel i × j dans un repère direct est :",["i","j","k","−k"],2,"i×j=k."],
+  ["La norme du vecteur nul est :",["0","1","−1","Infini"],0,"La norme du vecteur nul est nulle."],
+  ["La norme de (a,b,c) vaut :",["a+b+c","√(a²+b²+c²)","abc","a²+b²+c²"],1,"C'est la norme euclidienne."],
+  ["Deux vecteurs sont colinéaires si :",["Ils sont perpendiculaires","L'un est un multiple de l'autre","Ils sont de norme égale","Leur somme est nulle toujours"],1,"C'est la définition de la colinéarité."],
+  ["La projection scalaire de u sur l'axe unitaire e vaut :",["u+e","u·e","u×e","||u||+||e||"],1,"La projection scalaire est le produit scalaire."],
+  ["La dérivée de 3x² est :",["3x","6x","6x²","x³"],1,"La dérivée de 3x² est 6x."],
+  ["La dérivée partielle de x²+y² par rapport à x est :",["2x","2y","x²","2x+2y"],0,"On considère y comme constant."],
+  ["Le gradient d'un champ scalaire est :",["Un vecteur","Un scalaire","Une masse","Une force toujours"],0,"Le gradient est un champ vectoriel."],
+  ["La divergence d'un champ vectoriel est :",["Un vecteur","Un scalaire","Un angle","Une longueur"],1,"La divergence est un scalaire."],
+  ["Le rotationnel d'un champ vectoriel en 3D est :",["Un scalaire","Un vecteur","Une masse","Un volume"],1,"Le rotationnel est un vecteur."],
+  ["Pour F=(x,y,z), div F vaut :",["0","1","2","3"],3,"Les trois dérivées partielles valent 1."],
+  ["Le produit scalaire u·u vaut :",["||u||","||u||²","0 toujours","−||u||"],1,"u·u est le carré de la norme."],
+  ["La norme de 2u vaut :",["||u||","2||u||","4||u||","||u||/2"],1,"La norme est multipliée par la valeur absolue du scalaire."],
+  ["La dérivée de sin(x) est :",["cos(x)","−cos(x)","sin(x)","−sin(x)"],0,"La dérivée de sin(x) est cos(x)."],
+  ["Le produit vectoriel de deux vecteurs parallèles est :",["Nul","Toujours égal à 1","Leur somme","Infini"],0,"Le sinus de l'angle nul vaut zéro."],
+  ["Dans un repère orthonormé, les axes sont :",["Parallèles","Perpendiculaires et de même échelle","Sans origine","Toujours inclinés à 45°"],1,"C'est la définition d'un repère orthonormé."]
+ ]
+},
+{
+ title: "Chapitre 02 — Les torseurs",
+ questions: [
+  ["Le moment d'une force F par rapport à O s'écrit :",["r×F","r·F","r+F","F/r"],0,"Le moment vectoriel est r×F."],
+  ["L'unité du moment d'une force est :",["N","N/m","N·m","kg"],2,"Le moment s'exprime en newtons-mètres."],
+  ["Une force de 10 N avec un bras de levier de 2 m produit un moment de :",["5 N·m","12 N·m","20 N·m","0"],2,"M=F×d=20 N·m."],
+  ["Si la ligne d'action passe par O, le moment en O est :",["Nul","Infini","Égal à la force","Toujours négatif"],0,"Le bras de levier est nul."],
+  ["Le bras de levier est la distance :",["Parcourue par le solide","Perpendiculaire entre O et la ligne d'action","Entre deux masses","Verticale toujours"],1,"Il s'agit de la distance perpendiculaire."],
+  ["Un torseur comprend :",["Une masse et une vitesse","Une résultante et un moment","Une température et une pression","Un volume et une aire"],1,"Ce sont les deux éléments de réduction."],
+  ["La résultante d'un torseur est :",["La somme vectorielle des forces","La somme des masses","Une vitesse","Un déplacement"],0,"La résultante est la somme des forces."],
+  ["Deux torseurs au même point sont égaux si :",["Résultantes et moments sont égaux","Leurs points sont différents","Leurs masses sont égales","Leurs moments sont nuls"],0,"Les deux éléments de réduction doivent être égaux."],
+  ["La somme de deux torseurs consiste à additionner :",["Les résultantes seulement","Les moments seulement","Les résultantes et les moments","Les points d'application"],2,"On additionne séparément les deux composantes."],
+  ["Un torseur nul possède :",["R=0 et M=0","R non nulle","M infini","Une force de 1 N"],0,"Les deux éléments sont nuls."],
+  ["Un couple pur a :",["Une résultante nulle et un moment non nul","Une résultante infinie","Un moment nul toujours","Une force unique"],0,"Un couple pur possède un moment libre."],
+  ["Le moment d'un couple pur dépend-il du point ?",["Oui toujours","Non","Seulement de la masse","Seulement de la vitesse"],1,"Le moment d'un couple est indépendant du point."],
+  ["Le moment d'une force est nul lorsque le bras de levier est :",["Maximal","Nul","Infini","Négatif"],1,"M=F×d."],
+  ["Le moment vectoriel est perpendiculaire :",["Au plan formé par r et F","À la force seulement dans tous les cas","À tous les axes","À aucun vecteur"],0,"Le produit vectoriel est perpendiculaire aux deux vecteurs."],
+  ["Le moment par rapport à un axe correspond à :",["La projection du moment sur cet axe","La norme de la masse","La vitesse","La force seule"],0,"On projette le moment vectoriel sur l'axe."],
+  ["La formule de transport du moment de O vers A est :",["M_A=M_O+AO×R","M_A=M_O toujours","M_A=R+AO","M_A=0"],0,"On ajoute le produit vectoriel du vecteur AO par la résultante."],
+  ["Un glisseur possède :",["Une résultante non nulle et un invariant nul","Une résultante toujours nulle","Un moment infini","Aucune force"],0,"Pour un glisseur, R·M est nul."],
+  ["Multiplier un torseur par k signifie :",["Multiplier R et M par k","Multiplier seulement le point","Annuler le torseur","Élever R au carré"],0,"Toutes les composantes sont multipliées par k."],
+  ["Le moment d'une force dépend de :",["La force et son bras de levier","La couleur du solide","La température","La vitesse uniquement"],0,"M dépend de la force et de la distance perpendiculaire."],
+  ["Le principe de transmissibilité permet de déplacer une force :",["Le long de sa ligne d'action sur un solide rigide","N'importe où","Uniquement verticalement","Vers le centre de gravité uniquement"],0,"Ce déplacement conserve l'effet extérieur sur un solide rigide."]
+ ]
+},
+{
+ title: "Chapitre 03 — Statique des solides",
+ questions: [
+  ["Le principe action-réaction indique que les forces sont :",["De même sens","Égales et opposées","Toujours verticales","De valeurs différentes"],1,"Elles ont même valeur, direction commune et sens opposés."],
+  ["L'unité d'une force est :",["kg","N","m","J"],1,"L'unité est le newton."],
+  ["Le poids est égal à :",["m/g","mg","m+g","g/m"],1,"P=mg."],
+  ["Pour m=2 kg et g=10 m/s², le poids vaut :",["2 N","5 N","20 N","200 N"],2,"P=2×10=20 N."],
+  ["La condition d'équilibre en translation est :",["ΣF=0","ΣF=m","ΣF=1","ΣF=v"],0,"La résultante des forces doit être nulle."],
+  ["En statique plane, les équations sont :",["Une équation","Deux équations","ΣFx=0, ΣFy=0, ΣM=0","Six équations"],2,"Deux équations de forces et une de moment."],
+  ["La réaction normale est :",["Parallèle à la surface","Perpendiculaire à la surface","Toujours verticale","Toujours nulle"],1,"La réaction normale est perpendiculaire au contact."],
+  ["Un appui mobile idéal fournit généralement :",["Une réaction normale","Trois moments","Aucune réaction","Une réaction dans toutes les directions"],0,"Il empêche le déplacement normal au support."],
+  ["Une articulation parfaite en 2D transmet :",["Deux composantes de force sans moment","Un moment seul","Aucune force","Une force seulement verticale"],0,"Elle bloque les translations et permet la rotation."],
+  ["Un encastrement en 2D empêche :",["La rotation seulement","Les deux translations et la rotation","Le mouvement horizontal seulement","Le mouvement vertical seulement"],1,"Il transmet deux forces et un moment."],
+  ["Le moment d'une force est nul si :",["Sa ligne d'action passe par le point","La force est grande","Le solide est lourd","Le point est éloigné"],0,"Le bras de levier est nul."],
+  ["Une force de 5 N avec bras de levier de 3 m produit :",["8 N·m","15 N·m","2 N·m","0"],1,"M=5×3=15 N·m."],
+  ["Isoler un solide signifie :",["Supprimer toutes les forces","Représenter les actions extérieures sur le solide","Supprimer le poids","Changer sa masse"],1,"L'isolement établit le bilan des actions mécaniques."],
+  ["Deux forces opposées de même valeur ont une résultante :",["Nulle","Égale à leur somme positive","Infinie","Verticale"],0,"Les forces se compensent."],
+  ["Si ΣFx=0 mais ΣFy≠0, le solide est-il en équilibre ?",["Oui","Non","Toujours","Seulement s'il est lourd"],1,"La résultante doit être nulle dans toutes les directions."],
+  ["Le poids d'un solide homogène s'applique idéalement au :",["Centre de gravité","Point le plus haut","Point de contact","Appui gauche"],0,"Le poids total peut être appliqué au centre de gravité."],
+  ["En 3D, un solide rigide possède combien d'équations scalaires d'équilibre ?",["2","3","6","9"],2,"Trois équations de forces et trois de moments."],
+  ["Pour calculer les réactions d'une poutre en équilibre, on utilise :",["Les équations d'équilibre","La température","La vitesse uniquement","La couleur"],0,"On utilise les sommes des forces et des moments."],
+  ["La force de frottement s'oppose généralement :",["Au glissement relatif ou à sa tendance","Au poids toujours","À la masse","À la réaction normale toujours"],0,"Le frottement s'oppose au mouvement relatif ou à sa tendance."],
+  ["Le principe de transmissibilité concerne :",["Le déplacement d'une force le long de sa ligne d'action","La variation de masse","Le changement de matériau","La suppression des réactions"],0,"C'est une propriété du modèle de solide rigide."]
+ ]
+},
+{
+ title: "Chapitre 04 — Cinématique du solide rigide",
+ questions: [
+  ["La cinématique étudie :",["Le mouvement sans ses causes","Les forces uniquement","Les matériaux","La résistance thermique"],0,"Elle décrit le mouvement indépendamment des forces."],
+  ["La vitesse est la dérivée de :",["La position par rapport au temps","La masse","La force","L'énergie"],0,"v=dx/dt."],
+  ["L'accélération est la dérivée de :",["La position","La vitesse","La masse","La force"],1,"a=dv/dt."],
+  ["L'unité de vitesse est :",["m/s","m/s²","N","kg"],0,"La vitesse s'exprime en mètres par seconde."],
+  ["L'unité d'accélération est :",["m","m/s","m/s²","N·m"],2,"L'accélération s'exprime en m/s²."],
+  ["Si x=3t, la vitesse vaut :",["3","3t","t²","0"],0,"La dérivée de 3t est 3."],
+  ["Si x=t², la vitesse vaut :",["t","2t","t²","2"],1,"v=2t."],
+  ["Si x=t², l'accélération vaut :",["0","t","2","2t"],2,"La dérivée de 2t est 2."],
+  ["Un mouvement rectiligne uniforme possède :",["Une vitesse constante","Une accélération infinie","Une trajectoire circulaire","Une vitesse nécessairement nulle"],0,"La vitesse vectorielle reste constante."],
+  ["Le déplacement vectoriel est :",["La différence entre position finale et initiale","La distance totale obligatoirement","La masse divisée par le temps","Toujours positif"],0,"Δr=r_final−r_initial."],
+  ["La vitesse angulaire s'exprime en :",["rad/s","m/s²","N","kg"],0,"C'est un angle par unité de temps."],
+  ["En rotation autour d'un axe fixe, v vaut :",["ωr","ω/r","r/ω","ω+r"],0,"La vitesse tangentielle vaut ωr."],
+  ["Un solide rigide conserve :",["Les distances entre ses points","Une vitesse nulle","Une masse variable","Une forme variable"],0,"Les distances entre points restent constantes."],
+  ["Si la vitesse vectorielle est constante, l'accélération est :",["Nulle","Égale à la vitesse","Infinie","Toujours négative"],0,"La vitesse ne varie pas."],
+  ["La pente d'un graphe position-temps donne :",["La vitesse","La masse","Le poids","Le moment"],0,"La pente est la dérivée de la position."],
+  ["L'aire sous un graphe vitesse-temps donne :",["Le déplacement","La masse","La force","La puissance"],0,"L'intégrale de la vitesse donne le déplacement."],
+  ["Lors d'une rotation, la vitesse tangentielle est plus grande pour un point :",["Plus éloigné de l'axe","Plus proche de l'axe","Situé sur l'axe","De masse plus élevée"],0,"v=ωr."],
+  ["La trajectoire d'un point en mouvement circulaire est :",["Un cercle","Une droite obligatoirement","Une parabole toujours","Un point fixe"],0,"Le point reste à distance constante du centre."],
+  ["Le déplacement peut-il être nul alors que la distance parcourue est positive ?",["Oui, si le point revient à son départ","Non, jamais","Seulement si la masse est nulle","Seulement en ligne droite"],0,"Le déplacement dépend des positions initiale et finale."],
+  ["Le mouvement plan d'un solide se déroule dans :",["Des plans parallèles fixes","Un seul point","Une droite uniquement","Un espace sans repère"],0,"Les trajectoires se trouvent dans des plans parallèles."]
+ ]
+},
+{
+ title: "Chapitre 05 — Géométrie des masses",
+ questions: [
+  ["Le centre de gravité correspond au point d'application de :",["La résultante du poids","La vitesse","La température","Le volume"],0,"Le poids total peut être appliqué au centre de gravité."],
+  ["Le centre d'un rectangle homogène se trouve :",["À un sommet","À l'intersection des diagonales","Sur un bord","À l'extérieur"],1,"Le centre est à l'intersection des diagonales."],
+  ["L'aire d'un rectangle vaut :",["L+b","Lb","2(L+b)","L/b"],1,"A=longueur×largeur."],
+  ["L'aire d'un triangle vaut :",["bh","bh/2","b+h","2bh"],1,"A=base×hauteur/2."],
+  ["Le volume d'un pavé droit vaut :",["L+b+h","Lbh","Lb/h","2(L+b+h)"],1,"Le volume est le produit des trois dimensions."],
+  ["Deux masses égales en A et B ont leur centre de masse :",["En A","En B","Au milieu de AB","Toujours à l'origine"],2,"Le barycentre de masses égales est le milieu du segment."],
+  ["L'abscisse du centre de masse de deux masses est :",["(m1x1+m2x2)/(m1+m2)","x1+x2","m1+m2","x1x2"],0,"C'est une moyenne pondérée par les masses."],
+  ["Le premier théorème de Guldin concerne :",["La surface de révolution d'une courbe","La vitesse","La force","L'énergie"],0,"Il relie la longueur de la courbe et le trajet de son centroïde."],
+  ["Le deuxième théorème de Guldin concerne :",["Le volume d'un solide de révolution","La vitesse angulaire","La force de frottement","La température"],0,"Il relie l'aire génératrice et le trajet de son centroïde."],
+  ["Le moment d'inertie massique d'une masse ponctuelle vaut :",["mr","mr²","m/r²","m+r"],1,"I=mr²."],
+  ["L'unité du moment d'inertie massique est :",["kg·m²","kg/m","N·m","m⁴"],0,"Il s'exprime en kg·m²."],
+  ["Le moment quadratique d'une surface s'exprime en :",["m","m²","m³","m⁴"],3,"L'intégrale de distance au carré sur une surface a l'unité m⁴."],
+  ["Si la distance à l'axe double, le moment d'inertie d'une masse ponctuelle est :",["Doublé","Multiplié par quatre","Divisé par deux","Inchangé"],1,"I dépend du carré de la distance."],
+  ["Pour une plaque homogène et symétrique, le centre de gravité est :",["Sur l'axe de symétrie","Toujours au bord","Toujours à l'extérieur","Au hasard"],0,"Le centre se trouve sur les axes de symétrie."],
+  ["Le centroïde d'une surface homogène correspond :",["Au centre géométrique de la surface","À un sommet toujours","Au point le plus bas","À l'origine obligatoirement"],0,"Pour une densité uniforme, centroïde et centre de masse coïncident."],
+  ["Le théorème de Huygens-Steiner s'écrit :",["I_O=I_G+md²","I_O=I_G−md","I_O=md","I_O=I_G/d"],0,"Le terme md² est ajouté pour un axe parallèle."],
+  ["Le centre de masse dépend :",["Des masses et de leurs positions","Des couleurs","Des températures uniquement","Des vitesses uniquement"],0,"Les masses et leurs positions déterminent le barycentre."],
+  ["Le périmètre d'un cercle de rayon R vaut :",["πR²","2πR","πR","4πR²"],1,"La circonférence vaut 2πR."],
+  ["L'aire d'un disque de rayon R vaut :",["2πR","πR²","πR","4πR"],1,"L'aire du disque vaut πR²."],
+  ["Pour une surface composée, le centroïde se calcule par :",["Une moyenne pondérée par les aires","La plus grande coordonnée","Le périmètre seulement","La masse volumique seule"],0,"Chaque centroïde est pondéré par l'aire de sa partie."]
+ ]
+},
+{
+ title: "Chapitre 06 — Principe fondamental de la dynamique",
+ questions: [
+  ["La deuxième loi de Newton s'écrit :",["ΣF=ma","ΣF=m/a","ΣF=m+a","ΣF=0 toujours"],0,"La résultante des forces est égale à m fois l'accélération."],
+  ["L'unité SI de masse est :",["N","kg","m/s","J"],1,"La masse se mesure en kilogrammes."],
+  ["Une force de 12 N agit sur 3 kg. L'accélération vaut :",["36 m/s²","9 m/s²","4 m/s²","0,25 m/s²"],2,"a=F/m=4 m/s²."],
+  ["Si la résultante des forces est nulle, l'accélération du centre de masse est :",["Nulle","Égale à g","Infinie","Égale à la masse"],0,"ΣF=ma."],
+  ["La quantité de mouvement vaut :",["mv","m/v","m+v","ma"],0,"p=mv."],
+  ["La première loi de Newton est appelée :",["Principe d'inertie","Loi de Hooke","Théorème de Guldin","Loi des gaz"],0,"Elle décrit la conservation du repos ou du mouvement rectiligne uniforme."],
+  ["Le travail d'une force parallèle au déplacement vaut :",["F/d","Fd","F+d","d/F"],1,"W=Fd lorsque force et déplacement ont le même sens."],
+  ["L'unité du travail est :",["Watt","Joule","Newton","Pascal"],1,"Le travail s'exprime en joules."],
+  ["Le travail d'une force perpendiculaire au déplacement est :",["Nul","Toujours positif","Infini","Égal à la masse"],0,"W=Fd cos(90°)=0."],
+  ["L'énergie cinétique vaut :",["mv","mv²","½mv²","m/v²"],2,"Ec=½mv²."],
+  ["Si la vitesse double, l'énergie cinétique est :",["Doublée","Multipliée par quatre","Divisée par deux","Inchangée"],1,"L'énergie cinétique dépend de v²."],
+  ["Le théorème de l'énergie cinétique relie la variation de Ec :",["Au travail total des forces","À la température","À la masse uniquement","Au volume"],0,"ΔEc est égal à la somme des travaux des forces."],
+  ["L'unité de puissance est :",["Joule","Watt","Newton","Kilogramme"],1,"La puissance se mesure en watts."],
+  ["La puissance est le travail effectué par :",["Unité de temps","Unité de masse","Unité de longueur","Unité de température"],0,"P=W/Δt pour une puissance moyenne."],
+  ["Pour une rotation simple autour d'un axe fixe, le moment dynamique vaut :",["Iα","I/α","mα","I+α"],0,"Le moment dynamique autour de l'axe est Iα dans ce cas."],
+  ["À masse constante, si la force résultante double, l'accélération :",["Double","Est divisée par deux","Ne change pas","Devient nulle"],0,"a=F/m."],
+  ["Un référentiel galiléen est un référentiel où :",["Les lois de Newton s'appliquent directement","Tout est immobile","La gravité est nulle","Le temps est nul"],0,"C'est un référentiel inertiel."],
+  ["Dans un référentiel non galiléen, on introduit généralement :",["Des forces d'inertie","Une masse négative","Une gravité nulle","Des longueurs nulles"],0,"Les forces d'inertie permettent d'écrire la dynamique dans ce référentiel."],
+  ["Le moment cinétique par rapport à O est :",["r×p","r+p","m/r","r·p uniquement"],0,"Le moment cinétique est r×p."],
+  ["Le poids d'une masse m est :",["mg","m/g","m+g","g/m"],0,"Le poids est le produit de la masse par g."]
+ ]
+}
+];
+
+let chapter = 0;
+let index = 0;
+let answers = [];
+let remaining = 1200;
+let interval = null;
+let done = false;
+
+function initHome() {
+  document.getElementById("chapters").innerHTML = data.map((c,i) =>
+    `<article class="chapter">
+      <h3>${c.title}</h3>
+      <p>${c.questions.length} questions · 20 minutes · Note sur 20</p>
+      <button onclick="start(${i})">Commencer ce test</button>
+    </article>`
+  ).join("");
+}
+
+function show(id) {
+  ["home","test","results"].forEach(x =>
+    document.getElementById(x).classList.toggle("hidden",x!==id)
+  );
+}
+
+function start(i) {
+  clearInterval(interval);
+  chapter = i;
+  index = 0;
+  answers = Array(20).fill(null);
+  remaining = 1200;
+  done = false;
+  document.getElementById("testTitle").textContent = data[i].title;
+  show("test");
+  renderQuestion();
+  updateTimer();
+  interval = setInterval(() => {
+    remaining--;
+    updateTimer();
+    if (remaining <= 0) finish(true);
+  },1000);
+  window.scrollTo(0,0);
+}
+
+function updateTimer() {
+  const m = Math.floor(remaining/60);
+  const s = remaining%60;
+  document.getElementById("timer").textContent =
+    `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+
+function renderQuestion() {
+  const q = data[chapter].questions[index];
+  document.getElementById("questionNumber").textContent =
+    `Question ${index+1} / 20`;
+  document.getElementById("answered").textContent =
+    `${answers.filter(a=>a!==null).length} réponse(s)`;
+  document.getElementById("progress").style.width =
+    `${answers.filter(a=>a!==null).length/20*100}%`;
+
+  document.getElementById("questionArea").innerHTML =
+    `<h3>${index+1}. ${q[0]}</h3>` +
+    q[1].map((option,j) =>
+      `<label class="option">
+        <input type="radio" name="answer" value="${j}"
+          ${answers[index]===j?"checked":""}>
+        ${String.fromCharCode(65+j)}. ${option}
+      </label>`
+    ).join("");
+
+  document.querySelectorAll('input[name="answer"]').forEach(input => {
+    input.addEventListener("change", e => {
+      answers[index] = Number(e.target.value);
+      renderQuestion();
+    });
+  });
+
+  document.getElementById("previous").disabled = index===0;
+  document.getElementById("next").textContent =
+    index===19 ? "Dernière question" : "Suivante";
+}
+
+function move(direction) {
+  index = Math.max(0,Math.min(19,index+direction));
+  renderQuestion();
+}
+
+function finish(auto) {
+  if (done) return;
+  const unanswered = answers.filter(a=>a===null).length;
+
+  if (!auto && unanswered>0 &&
+      !confirm(`Il reste ${unanswered} question(s) sans réponse. Terminer ?`))
+    return;
+
+  done = true;
+  clearInterval(interval);
+
+  const qs = data[chapter].questions;
+  const score = qs.reduce((sum,q,i) =>
+    sum + (answers[i]===q[2] ? 1 : 0),0);
+
+  document.getElementById("score").textContent = `Note : ${score}/20`;
+  document.getElementById("comment").textContent =
+    score>=16 ? "Très bon résultat : les prérequis sont bien maîtrisés." :
+    score>=12 ? "Résultat satisfaisant, quelques notions sont à réviser." :
+    score>=8 ? "Des lacunes existent. Une révision est recommandée." :
+    "Une révision des notions fondamentales est recommandée.";
+
+  document.getElementById("correction").innerHTML = qs.map((q,i) => {
+    const good = answers[i]===q[2];
+    return `<article class="question">
+      <strong>${i+1}. ${q[0]}</strong>
+      <p class="${good?"correct":"incorrect"}">
+        ${good?"Bonne réponse":"Réponse incorrecte ou absente"}
+      </p>
+      <p><strong>Bonne réponse :</strong>
+        ${String.fromCharCode(65+q[2])}. ${q[1][q[2]]}</p>
+      <p><strong>Explication :</strong> ${q[3]}</p>
+    </article>`;
+  }).join("");
+
+  show("results");
+  window.scrollTo(0,0);
+}
+
+function retry() { start(chapter); }
+
+function goHome() {
+  if (!done && !document.getElementById("test").classList.contains("hidden")) {
+    if (!confirm("Quitter ce test ? Les réponses en cours seront perdues.")) return;
+  }
+  clearInterval(interval);
+  show("home");
+  window.scrollTo(0,0);
+}
+
+initHome();
+</script>
+</body>
+</html>
